@@ -1,0 +1,220 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #777;
+}
+
+/* MOBILE FRAME */
+.mobile {
+    width: 375px;
+    height: 100vh;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* HEADER */
+.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.logo img {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+}
+
+.top h3 {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600;
+    margin-left: 18%;
+    color: #333;
+}
+
+.menu-btn {
+    font-size: 22px;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* DROPDOWN MENU */
+.menu {
+    position: absolute;
+    top: 70px;
+    right: 15px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    width: 150px;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 100;
+}
+
+.menu div {
+    padding: 12px 15px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.menu div:hover {
+    background: #f2f4ff;
+}
+
+.menu .danger {
+    color: #e53935;
+}
+
+/* MAIN CONTENT */
+.main-content {
+    flex: 1;
+    padding: 15px;
+    background: #fafafa;
+    overflow-y: auto;
+}
+
+/* CARD STYLE */
+.card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card p {
+    font-size: 13px;
+    color: #777;
+    margin-bottom: 6px;
+}
+
+.card h3 {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.rupee {
+    font-size: 28px;
+    color: #5c7cfa;
+}
+
+/* BUTTONS */
+.big-btn {
+    width: 100%;
+    padding: 14px;
+    background: #5c7cfa;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    margin: 25px 0 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.big-btn:hover {
+    background: #4c6ce9;
+}
+
+.two-btn {
+    display: flex;
+    gap: 12px;
+}
+
+.two-btn button {
+    flex: 1;
+    padding: 14px;
+    background: #5c7cfa;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.two-btn button:hover {
+    background: #4c6ce9;
+}
+
+/* FOOTER */
+.nav {
+    height: 70px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: #fff;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+}
+
+.nav div {
+    flex: 1;
+    text-align: center;
+}
+
+.ft-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #777;
+    font-size: 11px;
+    transition: color 0.2s;
+    width: 100%;
+    padding-left: 20px;
+}
+
+.ft-btn span {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.nav .active .ft-btn {
+    color: #4c7df0;
+    font-weight: 600;
+}
+
+.ft-btn:hover {
+    color: #4c7df0;
+}
+
+/* NAV ITEM ACTIVE STATE */
+.nav-item.active {
+    color: #4c7df0;
+}

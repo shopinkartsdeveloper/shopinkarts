@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShopInKarts - Login</title>
+    <title>ShopInKarts - Forgot Password</title>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -25,10 +25,10 @@
             padding: 20px;
         }
 
-        /* Login Card */
-        .login-container {
+        /* Forgot Password Card */
+        .forgot-container {
             width: 100%;
-            max-width: 420px;
+            max-width: 450px;
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
@@ -95,6 +95,7 @@
         .form-title p {
             color: #666;
             font-size: 15px;
+            line-height: 1.5;
         }
 
         /* Input Fields */
@@ -146,74 +147,44 @@
             z-index: 2;
         }
 
-        /* Show Password Toggle */
-        .show-password {
-            position: absolute;
-            right: 18px;
-            top: 50%;
-            transform: translateY(-50%);
+        /* Helper Text */
+        .helper-text {
+            display: block;
+            margin-top: 8px;
             color: #64748b;
-            font-size: 18px;
-            cursor: pointer;
-            z-index: 2;
-            transition: all 0.3s ease;
-            background: transparent;
-            border: none;
-            padding: 5px;
+            font-size: 13px;
+            font-style: italic;
+            line-height: 1.4;
         }
 
-        .show-password:hover {
-            color: #4361ee;
-            transform: translateY(-50%) scale(1.1);
+        /* Info Box */
+        .info-box {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border-left: 5px solid #0ea5e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
         }
 
-        /* Remember Me & Forgot Password */
-        .form-options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
+        .info-box p {
+            color: #0369a1;
             font-size: 14px;
-        }
-
-        .remember-me {
+            line-height: 1.5;
             display: flex;
             align-items: center;
             gap: 10px;
-            color: #555;
-            cursor: pointer;
-            font-weight: 500;
         }
 
-        .remember-me input {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: #4361ee;
+        /* Buttons Container */
+        .buttons-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
         }
 
-        .remember-me label {
-            cursor: pointer;
-        }
-
-        .forgot-password {
-            color: #4361ee;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            padding: 5px 10px;
-            border-radius: 6px;
-        }
-
-        .forgot-password:hover {
-            text-decoration: underline;
-            background: #f1f5f9;
-        }
-
-        /* Submit Button */
         .submit-btn {
-            width: 100%;
-            padding: 18px;
+            flex: 2;
+            padding: 16px;
             background: linear-gradient(135deg, #4361ee, #3a0ca3);
             color: white;
             border: none;
@@ -222,7 +193,6 @@
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-bottom: 25px;
             position: relative;
             overflow: hidden;
             letter-spacing: 0.5px;
@@ -248,8 +218,24 @@
             left: 100%;
         }
 
-        .submit-btn:active {
-            transform: translateY(0);
+        .back-btn {
+            flex: 1;
+            padding: 16px;
+            background: #f1f5f9;
+            color: #64748b;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .back-btn:hover {
+            background: #e1e5e9;
+            transform: translateY(-2px);
         }
 
         /* Error Messages */
@@ -291,47 +277,58 @@
             animation: slideIn 0.3s ease;
         }
 
-        /* Registration Link */
-        .register-link {
+        /* For testing: Show reset link */
+        .reset-link-box {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-left: 5px solid #f59e0b;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            word-break: break-all;
+        }
+
+        .reset-link-box h4 {
+            color: #92400e;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .reset-link-box a {
+            color: #0369a1;
+            font-size: 13px;
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .reset-link-box a:hover {
+            text-decoration: underline;
+        }
+
+        /* Login Link */
+        .login-link {
             text-align: center;
             margin-top: 25px;
             padding-top: 25px;
             border-top: 2px solid #f1f5f9;
         }
 
-        .register-link p {
+        .login-link p {
             color: #666;
             font-size: 15px;
-            margin-bottom: 15px;
         }
 
-        .register-link a {
-            display: inline-block;
-            padding: 12px 25px;
-            background: #f8fafc;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
+        .login-link a {
             color: #4361ee;
             font-weight: 700;
             text-decoration: none;
-            transition: all 0.3s ease;
+            margin-left: 5px;
         }
 
-        .register-link a:hover {
-            background: #4361ee;
-            color: white;
-            border-color: #4361ee;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.2);
-        }
-
-        /* Helper Text */
-        .helper-text {
-            display: block;
-            margin-top: 8px;
-            color: #64748b;
-            font-size: 12px;
-            font-style: italic;
+        .login-link a:hover {
+            text-decoration: underline;
         }
 
         /* Animation */
@@ -348,7 +345,7 @@
 
         /* Responsive */
         @media (max-width: 480px) {
-            .login-container {
+            .forgot-container {
                 max-width: 100%;
                 margin: 10px;
             }
@@ -357,14 +354,8 @@
                 padding: 25px;
             }
             
-            .form-options {
+            .buttons-container {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-            
-            .forgot-password {
-                align-self: flex-end;
             }
             
             .logo-section {
@@ -379,28 +370,30 @@
 </head>
 
 <body>
-    <div class="login-container">
+    <div class="forgot-container">
         <!-- Logo Section -->
         <div class="logo-section">
             <h1>ShopInKarts</h1>
-            <!-- <p>Multi-User Login Portal</p> -->
+            <p>Reset Your Password</p>
         </div>
 
         <!-- Form Section -->
         <div class="form-section">
             <!-- Form Title -->
             <div class="form-title">
-                <h2>Welcome Back</h2>
-                <p>Login with email or mobile number</p>
+                <h2>Forgot Password?</h2>
+                <p>Enter your email or mobile number to receive a password reset link</p>
+            </div>
+
+            <!-- Info Box -->
+            <div class="info-box">
+                <p>
+                    <i class="fas fa-info-circle"></i>
+                    We will send a password reset link to your registered email address.
+                </p>
             </div>
 
             <!-- Error Messages -->
-            @if(session('error'))
-                <div class="error-message">
-                    <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
-                </div>
-            @endif
-
             @if($errors->any())
                 <div class="error-message">
                     @foreach($errors->all() as $error)
@@ -415,8 +408,20 @@
                 </div>
             @endif
 
-            <!-- Login Form -->
-            <form method="POST" action="{{ route('login') }}" id="loginForm">
+            <!-- For testing: Show reset link -->
+            @if(session('reset_link'))
+                <div class="reset-link-box">
+                    <h4><i class="fas fa-link"></i> Test Reset Link (For Development Only):</h4>
+                    <a href="{{ session('reset_link') }}" target="_blank">{{ session('reset_link') }}</a>
+                    <p style="margin-top: 8px; font-size: 12px; color: #92400e;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        In production, this link would be sent to your email.
+                    </p>
+                </div>
+            @endif
+
+            <!-- Forgot Password Form -->
+            <form method="POST" action="{{ route('password.email') }}" id="forgotForm">
                 @csrf
 
                 <!-- Email/Mobile Field -->
@@ -433,57 +438,28 @@
                                placeholder="Enter email or 10-digit mobile"
                                required
                                autofocus>
-                        <span class="helper-text">You can use email or mobile number to login</span>
+                        <span class="helper-text">Enter the email or mobile number associated with your account</span>
                     </div>
                     @error('identifier')
                         <span class="input-error">{{ $message }}</span>
                     @enderror
                 </div>
 
-                <!-- Password Field -->
-                <div class="input-group">
-                    <label class="input-label" for="password">
-                        <i class="fas fa-lock"></i> Password
-                    </label>
-                    <div class="input-field">
-                        <i class="fas fa-key icon"></i>
-                        <input type="password" 
-                               id="password" 
-                               name="password" 
-                               placeholder="Enter your password"
-                               required>
-                        <button type="button" class="show-password" id="togglePassword">
-                            <i class="far fa-eye"></i>
-                        </button>
-                    </div>
-                    @error('password')
-                        <span class="input-error">{{ $message }}</span>
-                    @enderror
+                <!-- Buttons -->
+                <div class="buttons-container">
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-paper-plane"></i> Send Reset Link
+                    </button>
+                    <a href="{{ route('login') }}" class="back-btn">
+                        <i class="fas fa-arrow-left"></i> Back to Login
+                    </a>
                 </div>
-
-                <!-- Remember Me & Forgot Password -->
-                <div class="form-options">
-                    <div class="remember-me">
-                        <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
-                        <label for="remember">Remember me</label>
-                    </div>
-
-                    <a href="{{ route('password.request') }}" class="forgot-password">Forgot Password?</a>
-                </div>
-
-                <!-- Submit Button -->
-                <button type="submit" class="submit-btn">
-                    <i class="fas fa-sign-in-alt"></i> Login to Dashboard
-                </button>
             </form>
 
-            <!-- ✅ REMOVED: Registration links from login page -->
-            <!-- <div class="register-link">
-                <p>Don't have an account?</p>
-                <a href="{{ route('register', ['type' => 'seller']) }}">
-                    <i class="fas fa-user-plus"></i> Create Account
-                </a>
-            </div> -->
+            <!-- Login Link -->
+            <div class="login-link">
+                <p>Remember your password? <a href="{{ route('login') }}">Login here</a></p>
+            </div>
         </div>
     </div>
 
@@ -491,10 +467,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const identifierInput = document.getElementById('identifier');
             const identifierIcon = document.getElementById('identifierIcon');
-            const passwordInput = document.getElementById('password');
-            const togglePassword = document.getElementById('togglePassword');
-            const eyeIcon = togglePassword.querySelector('i');
-            const loginForm = document.getElementById('loginForm');
+            const forgotForm = document.getElementById('forgotForm');
             
             // Detect input type and change icon
             identifierInput.addEventListener('input', function() {
@@ -525,41 +498,15 @@
                 }
             });
             
-            // Toggle password visibility
-            togglePassword.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                
-                // Toggle eye icon
-                eyeIcon.classList.toggle('fa-eye');
-                eyeIcon.classList.toggle('fa-eye-slash');
-                
-                // Add focus to password field
-                passwordInput.focus();
-            });
-            
-            // Auto-detect input type on page load
-            if (identifierInput.value) {
-                identifierInput.dispatchEvent(new Event('input'));
-            }
-            
             // Form validation
-            loginForm.addEventListener('submit', function(e) {
+            forgotForm.addEventListener('submit', function(e) {
                 const identifier = identifierInput.value.trim();
-                const password = passwordInput.value;
                 
                 // Basic validation
                 if (!identifier) {
                     e.preventDefault();
                     showAlert('Please enter email or mobile number', 'error');
                     identifierInput.focus();
-                    return false;
-                }
-                
-                if (!password) {
-                    e.preventDefault();
-                    showAlert('Please enter password', 'error');
-                    passwordInput.focus();
                     return false;
                 }
                 
@@ -577,7 +524,7 @@
                 // Change button text to show loading
                 const submitBtn = this.querySelector('.submit-btn');
                 const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
                 submitBtn.disabled = true;
                 
                 // Re-enable button after 5 seconds (in case of error)
@@ -605,17 +552,10 @@
                 }
             });
             
-            // Add input animation
-            const inputs = document.querySelectorAll('.input-field input');
-            inputs.forEach(input => {
-                input.addEventListener('focus', function() {
-                    this.parentElement.style.transform = 'scale(1.02)';
-                });
-                
-                input.addEventListener('blur', function() {
-                    this.parentElement.style.transform = 'scale(1)';
-                });
-            });
+            // Auto-detect input type on page load
+            if (identifierInput.value) {
+                identifierInput.dispatchEvent(new Event('input'));
+            }
             
             // Alert function
             function showAlert(message, type = 'info') {
