@@ -173,7 +173,7 @@
                         <a class="nav-link text-dark fw-medium" href="#features">Features</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('admin.login') }}">Seller Program</a>
+                        <a class="nav-link" href="{{ route('login') }}">Seller Program</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-dark fw-medium" href="#">Contact</a>

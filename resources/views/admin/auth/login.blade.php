@@ -8,6 +8,9 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -136,6 +139,11 @@
             transform: translateY(-2px);
         }
 
+        .input-field input.error {
+            border-color: #d32f2f;
+            background: #fff5f5;
+        }
+
         .input-field .icon {
             position: absolute;
             left: 18px;
@@ -144,6 +152,24 @@
             color: #64748b;
             font-size: 18px;
             z-index: 2;
+        }
+
+        /* Character Counter */
+        .char-counter {
+            position: absolute;
+            right: 45px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 12px;
+            background: #f8fafc;
+            padding: 2px 6px;
+            border-radius: 3px;
+            display: none;
+        }
+
+        .input-field input:focus + .char-counter {
+            display: none;
         }
 
         /* Show Password Toggle */
@@ -228,6 +254,12 @@
             letter-spacing: 0.5px;
         }
 
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
         .submit-btn::before {
             content: '';
             position: absolute;
@@ -239,16 +271,16 @@
             transition: 0.5s;
         }
 
-        .submit-btn:hover {
+        .submit-btn:hover:not(:disabled) {
             transform: translateY(-3px);
             box-shadow: 0 10px 25px rgba(67, 97, 238, 0.4);
         }
 
-        .submit-btn:hover::before {
+        .submit-btn:hover:not(:disabled)::before {
             left: 100%;
         }
 
-        .submit-btn:active {
+        .submit-btn:active:not(:disabled) {
             transform: translateY(0);
         }
 
@@ -291,40 +323,6 @@
             animation: slideIn 0.3s ease;
         }
 
-        /* Registration Link */
-        .register-link {
-            text-align: center;
-            margin-top: 25px;
-            padding-top: 25px;
-            border-top: 2px solid #f1f5f9;
-        }
-
-        .register-link p {
-            color: #666;
-            font-size: 15px;
-            margin-bottom: 15px;
-        }
-
-        .register-link a {
-            display: inline-block;
-            padding: 12px 25px;
-            background: #f8fafc;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            color: #4361ee;
-            font-weight: 700;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .register-link a:hover {
-            background: #4361ee;
-            color: white;
-            border-color: #4361ee;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.2);
-        }
-
         /* Helper Text */
         .helper-text {
             display: block;
@@ -332,6 +330,24 @@
             color: #64748b;
             font-size: 12px;
             font-style: italic;
+        }
+
+        /* Real-time Validation Message */
+        .validation-message {
+            font-size: 12px;
+            margin-top: 5px;
+            padding-left: 5px;
+            display: none;
+        }
+
+        .validation-message.valid {
+            color: #28a745;
+            display: block;
+        }
+
+        .validation-message.invalid {
+            color: #d32f2f;
+            display: block;
         }
 
         /* Animation */
@@ -383,7 +399,6 @@
         <!-- Logo Section -->
         <div class="logo-section">
             <h1>ShopInKarts</h1>
-            <!-- <p>Multi-User Login Portal</p> -->
         </div>
 
         <!-- Form Section -->
@@ -432,9 +447,11 @@
                                value="{{ old('identifier') }}"
                                placeholder="Enter email or 10-digit mobile"
                                required
-                               autofocus>
-                        <span class="helper-text">You can use email or mobile number to login</span>
+                               autofocus
+                               autocomplete="username">
+                        <span class="char-counter" id="identifierCounter">0/60</span>
                     </div>
+                    <div class="validation-message" id="identifierValidation"></div>
                     @error('identifier')
                         <span class="input-error">{{ $message }}</span>
                     @enderror
@@ -451,11 +468,16 @@
                                id="password" 
                                name="password" 
                                placeholder="Enter your password"
-                               required>
+                               required
+                               minlength="8"
+                               maxlength="50"
+                               autocomplete="current-password">
+                        <span class="char-counter" id="passwordCounter">0/50</span>
                         <button type="button" class="show-password" id="togglePassword">
                             <i class="far fa-eye"></i>
                         </button>
                     </div>
+                    <div class="validation-message" id="passwordValidation"></div>
                     @error('password')
                         <span class="input-error">{{ $message }}</span>
                     @enderror
@@ -472,178 +494,421 @@
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" class="submit-btn">
+                <button type="submit" class="submit-btn" id="submitBtn">
                     <i class="fas fa-sign-in-alt"></i> Login to Dashboard
                 </button>
             </form>
-
-            <!-- ✅ REMOVED: Registration links from login page -->
-            <!-- <div class="register-link">
-                <p>Don't have an account?</p>
-                <a href="{{ route('register', ['type' => 'seller']) }}">
-                    <i class="fas fa-user-plus"></i> Create Account
-                </a>
-            </div> -->
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const identifierInput = document.getElementById('identifier');
-            const identifierIcon = document.getElementById('identifierIcon');
-            const passwordInput = document.getElementById('password');
-            const togglePassword = document.getElementById('togglePassword');
-            const eyeIcon = togglePassword.querySelector('i');
-            const loginForm = document.getElementById('loginForm');
+        $(document).ready(function() {
+            const identifierInput = $('#identifier');
+            const passwordInput = $('#password');
+            const submitBtn = $('#submitBtn');
+            const loginForm = $('#loginForm');
+            const identifierIcon = $('#identifierIcon');
+            const identifierValidation = $('#identifierValidation');
+            const passwordValidation = $('#passwordValidation');
+            const identifierCounter = $('#identifierCounter');
+            const passwordCounter = $('#passwordCounter');
             
-            // Detect input type and change icon
-            identifierInput.addEventListener('input', function() {
-                const value = this.value.trim();
-                
-                // Check if input looks like email
-                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                // Check if input looks like mobile (digits only)
-                const mobilePattern = /^\d+$/;
-                
-                if (emailPattern.test(value)) {
-                    identifierIcon.className = 'fas fa-envelope icon';
-                    identifierInput.type = 'email';
-                    identifierInput.placeholder = 'Enter your email address';
-                } else if (mobilePattern.test(value)) {
-                    identifierIcon.className = 'fas fa-phone icon';
-                    identifierInput.type = 'tel';
-                    identifierInput.placeholder = 'Enter 10-digit mobile number';
-                    
-                    // Auto-format mobile number
-                    if (value.length === 10) {
-                        this.value = value.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
-                    }
-                } else {
-                    identifierIcon.className = 'fas fa-user icon';
-                    identifierInput.type = 'text';
-                    identifierInput.placeholder = 'Enter email or 10-digit mobile';
-                }
-            });
+            // Character limits
+            const MAX_EMAIL_LENGTH = 60;
+            const MOBILE_LENGTH = 10;
+            const MAX_PASSWORD_LENGTH = 50;
             
-            // Toggle password visibility
-            togglePassword.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                
-                // Toggle eye icon
-                eyeIcon.classList.toggle('fa-eye');
-                eyeIcon.classList.toggle('fa-eye-slash');
-                
-                // Add focus to password field
-                passwordInput.focus();
-            });
-            
-            // Auto-detect input type on page load
-            if (identifierInput.value) {
-                identifierInput.dispatchEvent(new Event('input'));
+            // XSS Prevention function
+            function sanitizeInput(input) {
+                return input.replace(/[<>"'&]/g, '');
             }
             
-            // Form validation
-            loginForm.addEventListener('submit', function(e) {
-                const identifier = identifierInput.value.trim();
-                const password = passwordInput.value;
+            // Email validation regex - Allows numbers in email username
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            
+            // Function to check if input is purely digits (mobile number)
+            function isAllDigits(value) {
+                return /^\d+$/.test(value);
+            }
+            
+            // Function to check if input contains any letter or @ symbol (email)
+            function containsLetterOrAtSymbol(value) {
+                return /[a-zA-Z@]/.test(value);
+            }
+            
+            // Function to detect input type
+            function detectInputType(value) {
+                // If it contains any letter or @ symbol, treat as email
+                if (containsLetterOrAtSymbol(value)) {
+                    return 'email';
+                }
+                // If it's all digits, treat as mobile
+                else if (isAllDigits(value)) {
+                    return 'mobile';
+                }
+                // For empty or mixed input, default to email
+                else {
+                    return 'email';
+                }
+            }
+            
+            // Function to update character counter
+            function updateCharCounter(input, counter, maxLength) {
+                const length = input.val().length;
+                counter.text(`${length}/${maxLength}`);
                 
-                // Basic validation
-                if (!identifier) {
-                    e.preventDefault();
-                    showAlert('Please enter email or mobile number', 'error');
-                    identifierInput.focus();
+                if (length > maxLength * 0.9) {
+                    counter.css('color', '#d32f2f');
+                } else if (length > maxLength * 0.7) {
+                    counter.css('color', '#ffa502');
+                } else {
+                    counter.css('color', '#64748b');
+                }
+            }
+            
+            // Function to restrict mobile input to exactly 10 digits
+            function restrictMobileInput(value) {
+                // Remove all non-digit characters
+                const digitsOnly = value.replace(/\D/g, '');
+                // Take only first 10 digits
+                return digitsOnly.slice(0, MOBILE_LENGTH);
+            }
+            
+            // Function to restrict email input to max 60 characters
+            function restrictEmailInput(value) {
+                return value.slice(0, MAX_EMAIL_LENGTH);
+            }
+            
+            // Function to validate identifier
+            function validateIdentifier() {
+                let value = identifierInput.val().trim();
+                
+                if (!value) {
+                    identifierInput.addClass('error');
+                    identifierValidation.removeClass('valid').addClass('invalid').text('Email or mobile number is required');
                     return false;
                 }
                 
-                if (!password) {
-                    e.preventDefault();
-                    showAlert('Please enter password', 'error');
-                    passwordInput.focus();
+                const inputType = detectInputType(value);
+                
+                if (inputType === 'mobile') {
+                    const mobileValue = restrictMobileInput(value);
+                    
+                    if (mobileValue.length === MOBILE_LENGTH) {
+                        identifierIcon.removeClass('fa-envelope').addClass('fa-phone');
+                        identifierInput.removeClass('error');
+                        identifierValidation.removeClass('invalid').addClass('valid').text('✓ Valid mobile number');
+                        return true;
+                    } else {
+                        identifierIcon.removeClass('fa-envelope').addClass('fa-phone'); // Corrected: Keep phone icon for mobile
+                        identifierInput.addClass('error');
+                        identifierValidation.removeClass('valid').addClass('invalid').text(`Mobile number must be exactly ${MOBILE_LENGTH} digits (${mobileValue.length}/${MOBILE_LENGTH})`);
+                        return false;
+                    }
+                } 
+                else { // Email type
+                    // Apply email length restriction
+                    if (value.length > MAX_EMAIL_LENGTH) {
+                        identifierIcon.removeClass('fa-phone').addClass('fa-envelope');
+                        identifierInput.addClass('error');
+                        identifierValidation.removeClass('valid').addClass('invalid').text(`Email must not exceed ${MAX_EMAIL_LENGTH} characters`);
+                        return false;
+                    }
+                    
+                    // Check if it's a valid email format when it contains @
+                    if (value.includes('@')) {
+                        if (emailRegex.test(value)) {
+                            identifierIcon.removeClass('fa-phone').addClass('fa-envelope');
+                            identifierInput.removeClass('error');
+                            identifierValidation.removeClass('invalid').addClass('valid').text('✓ Valid email format');
+                            return true;
+                        } else {
+                            identifierIcon.removeClass('fa-phone').addClass('fa-envelope');
+                            identifierInput.addClass('error');
+                            identifierValidation.removeClass('valid').addClass('invalid').text('Please enter a valid email address');
+                            return false;
+                        }
+                    } else {
+                        // User is still typing email (no @ yet)
+                        identifierIcon.removeClass('fa-phone').addClass('fa-envelope');
+                        identifierInput.removeClass('error');
+                        identifierValidation.removeClass('invalid valid').text('');
+                        return true;
+                    }
+                }
+            }
+            
+            // Function to validate password
+            function validatePassword() {
+                const value = passwordInput.val();
+                
+                if (!value) {
+                    passwordInput.addClass('error');
+                    passwordValidation.removeClass('valid').addClass('invalid').text('Password is required');
                     return false;
                 }
                 
-                // Validate mobile format if it's a mobile number
-                if (/^\d+$/.test(identifier.replace(/\D/g, ''))) {
-                    const mobile = identifier.replace(/\D/g, '');
-                    if (mobile.length !== 10) {
+                if (value.length < 8) {
+                    passwordInput.addClass('error');
+                    passwordValidation.removeClass('valid').addClass('invalid').text('Password must be at least 8 characters');
+                    return false;
+                }
+                
+                if (value.length > MAX_PASSWORD_LENGTH) {
+                    passwordInput.addClass('error');
+                    passwordValidation.removeClass('valid').addClass('invalid').text(`Password is too long (max ${MAX_PASSWORD_LENGTH} characters)`);
+                    return false;
+                }
+                
+                // Basic XSS check for password
+                if (/<[^>]*>|javascript:|on\w+=/i.test(value)) {
+                    passwordInput.addClass('error');
+                    passwordValidation.removeClass('valid').addClass('invalid').text('Invalid characters detected');
+                    return false;
+                }
+                
+                passwordInput.removeClass('error');
+                passwordValidation.removeClass('invalid').addClass('valid').text('✓ Password looks good');
+                return true;
+            }
+            
+            // Handle identifier input with smart detection and restrictions
+            identifierInput.on('input', function() {
+                let value = $(this).val();
+                const inputType = detectInputType(value);
+                
+                // Apply restrictions based on input type
+                if (inputType === 'mobile') {
+                    // Restrict to only 10 digits for mobile
+                    const restrictedValue = restrictMobileInput(value);
+                    $(this).val(restrictedValue);
+                    
+                    // Update counter for mobile
+                    updateCharCounter($(this), identifierCounter, MOBILE_LENGTH);
+                    
+                    // Show mobile icon
+                    identifierIcon.removeClass('fa-envelope').addClass('fa-phone');
+                } 
+                else { // Email type
+                    // Restrict to max 60 characters for email
+                    const restrictedValue = restrictEmailInput(value);
+                    $(this).val(restrictedValue);
+                    
+                    // Update counter for email
+                    updateCharCounter($(this), identifierCounter, MAX_EMAIL_LENGTH);
+                    
+                    // Show email icon
+                    identifierIcon.removeClass('fa-phone').addClass('fa-envelope');
+                }
+                
+                validateIdentifier();
+                updateSubmitButton();
+            });
+            
+            // Handle identifier keypress to enforce restrictions
+            identifierInput.on('keypress', function(e) {
+                let value = $(this).val();
+                const charCode = e.which ? e.which : e.keyCode;
+                const char = String.fromCharCode(charCode);
+                const newValue = value + char;
+                const inputType = detectInputType(newValue);
+                
+                // Prevent typing if mobile length is reached
+                if (inputType === 'mobile') {
+                    const mobileValue = restrictMobileInput(newValue);
+                    // FIXED: Changed >= to > to allow exactly 10 digits
+                    if (mobileValue.length > MOBILE_LENGTH && !(e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39)) {
                         e.preventDefault();
-                        showAlert('Please enter a valid 10-digit mobile number', 'error');
-                        identifierInput.focus();
+                        return false;
+                    }
+                    
+                    // Only allow digits for mobile
+                    if (charCode < 48 || charCode > 57) {
+                        e.preventDefault();
                         return false;
                     }
                 }
                 
-                // Change button text to show loading
-                const submitBtn = this.querySelector('.submit-btn');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
-                submitBtn.disabled = true;
-                
-                // Re-enable button after 5 seconds (in case of error)
-                setTimeout(() => {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }, 5000);
+                // Prevent typing if email length is reached
+                if (inputType === 'email') {
+                    // FIXED: Changed >= to > to allow exactly 60 characters
+                    if (newValue.length > MAX_EMAIL_LENGTH && !(e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39)) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
                 
                 return true;
             });
             
-            // Auto-format mobile number on blur
-            identifierInput.addEventListener('blur', function() {
-                const value = this.value.replace(/\D/g, '');
-                if (value.length === 10) {
-                    this.value = value.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
-                }
+            // Handle identifier paste event
+            identifierInput.on('paste', function(e) {
+                setTimeout(() => {
+                    let value = $(this).val();
+                    const inputType = detectInputType(value);
+                    
+                    if (inputType === 'mobile') {
+                        $(this).val(restrictMobileInput(value));
+                    } else {
+                        $(this).val(restrictEmailInput(value));
+                    }
+                    
+                    validateIdentifier();
+                    updateSubmitButton();
+                }, 0);
             });
             
-            // Remove formatting on focus
-            identifierInput.addEventListener('focus', function() {
-                const value = this.value.replace(/\D/g, '');
-                if (value.length === 10) {
-                    this.value = value;
+            passwordInput.on('input', function() {
+                // Restrict password length
+                if ($(this).val().length > MAX_PASSWORD_LENGTH) {
+                    $(this).val($(this).val().slice(0, MAX_PASSWORD_LENGTH));
                 }
-            });
-            
-            // Add input animation
-            const inputs = document.querySelectorAll('.input-field input');
-            inputs.forEach(input => {
-                input.addEventListener('focus', function() {
-                    this.parentElement.style.transform = 'scale(1.02)';
-                });
                 
-                input.addEventListener('blur', function() {
-                    this.parentElement.style.transform = 'scale(1)';
-                });
+                updateCharCounter($(this), passwordCounter, MAX_PASSWORD_LENGTH);
+                validatePassword();
+                updateSubmitButton();
             });
+            
+            // Show character counter on focus
+            identifierInput.on('focus', function() {
+                identifierCounter.show();
+            });
+            
+            identifierInput.on('blur', function() {
+                setTimeout(() => identifierCounter.hide(), 200);
+                
+                // Format mobile number with dashes on blur
+                let value = $(this).val().trim();
+                if (detectInputType(value) === 'mobile' && value.length === MOBILE_LENGTH) {
+                    $(this).val(value.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'));
+                }
+            });
+            
+            // Remove formatting on focus if it's mobile
+            identifierInput.on('focus', function() {
+                let value = $(this).val().trim();
+                if (detectInputType(value) === 'mobile') {
+                    $(this).val(restrictMobileInput(value));
+                }
+            });
+            
+            passwordInput.on('focus', function() {
+                passwordCounter.show();
+            });
+            
+            passwordInput.on('blur', function() {
+                setTimeout(() => passwordCounter.hide(), 200);
+            });
+            
+            // Toggle password visibility
+            $('#togglePassword').click(function() {
+                const type = passwordInput.attr('type') === 'password' ? 'text' : 'password';
+                passwordInput.attr('type', type);
+                
+                // Toggle eye icon
+                $(this).find('i').toggleClass('fa-eye fa-eye-slash');
+            });
+            
+            // Update submit button state
+            function updateSubmitButton() {
+                const isIdentifierValid = validateIdentifier();
+                const isPasswordValid = validatePassword();
+                
+                if (isIdentifierValid && isPasswordValid) {
+                    submitBtn.prop('disabled', false);
+                } else {
+                    submitBtn.prop('disabled', true);
+                }
+            }
+            
+            // Form submission with additional validation
+            loginForm.on('submit', function(e) {
+                e.preventDefault();
+                
+                // Final validation
+                const isIdentifierValid = validateIdentifier();
+                const isPasswordValid = validatePassword();
+                
+                if (!isIdentifierValid || !isPasswordValid) {
+                    showAlert('Please fix the validation errors before submitting', 'error');
+                    return false;
+                }
+                
+                // Sanitize inputs before submission
+                let identifier = identifierInput.val().trim();
+                const password = sanitizeInput(passwordInput.val());
+                
+                // Remove dashes from mobile number if present
+                const inputType = detectInputType(identifier);
+                if (inputType === 'mobile') {
+                    identifier = restrictMobileInput(identifier);
+                }
+                
+                // Set sanitized values back to form
+                identifierInput.val(identifier);
+                
+                // Show loading state
+                const originalText = submitBtn.html();
+                submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Authenticating...');
+                submitBtn.prop('disabled', true);
+                
+                // Submit form after 100ms delay
+                setTimeout(() => {
+                    this.submit();
+                }, 100);
+                
+                // Re-enable button after 10 seconds (in case of error)
+                setTimeout(() => {
+                    submitBtn.html(originalText);
+                    submitBtn.prop('disabled', false);
+                }, 10000);
+                
+                return true;
+            });
+            
+            // Initialize validation and counters
+            const initialValue = identifierInput.val().trim();
+            const initialType = detectInputType(initialValue);
+            
+            if (initialType === 'mobile') {
+                updateCharCounter(identifierInput, identifierCounter, MOBILE_LENGTH);
+            } else {
+                updateCharCounter(identifierInput, identifierCounter, MAX_EMAIL_LENGTH);
+            }
+            
+            updateCharCounter(passwordInput, passwordCounter, MAX_PASSWORD_LENGTH);
+            validateIdentifier();
+            validatePassword();
+            updateSubmitButton();
             
             // Alert function
             function showAlert(message, type = 'info') {
+                // Remove existing alerts
+                $('.custom-alert').remove();
+                
                 // Create alert element
-                const alert = document.createElement('div');
-                alert.className = `alert alert-${type}`;
-                alert.innerHTML = `
-                    <div style="position: fixed; top: 20px; right: 20px; background: ${type === 'error' ? '#d32f2f' : '#4361ee'}; 
-                         color: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
-                         display: flex; align-items: center; gap: 10px; z-index: 10000; animation: slideInRight 0.3s ease;">
+                const alert = $(`
+                    <div class="custom-alert" style="position: fixed; top: 20px; right: 20px; background: ${type === 'error' ? '#d32f2f' : '#4361ee'}; 
+                        color: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+                        display: flex; align-items: center; gap: 10px; z-index: 10000; animation: slideInRight 0.3s ease;">
                         <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
                         <span>${message}</span>
                     </div>
-                `;
+                `);
                 
-                document.body.appendChild(alert);
+                $('body').append(alert);
                 
                 // Remove alert after 3 seconds
                 setTimeout(() => {
-                    alert.style.animation = 'slideOutRight 0.3s ease';
+                    alert.css('animation', 'slideOutRight 0.3s ease');
                     setTimeout(() => alert.remove(), 300);
                 }, 3000);
-                
-                // Add CSS for animations
-                if (!document.querySelector('#alert-styles')) {
-                    const style = document.createElement('style');
-                    style.id = 'alert-styles';
-                    style.textContent = `
+            }
+            
+            // Add CSS for animations
+            if (!$('#alert-styles').length) {
+                $('head').append(`
+                    <style id="alert-styles">
                         @keyframes slideInRight {
                             from { transform: translateX(100%); opacity: 0; }
                             to { transform: translateX(0); opacity: 1; }
@@ -652,11 +917,10 @@
                             from { transform: translateX(0); opacity: 1; }
                             to { transform: translateX(100%); opacity: 0; }
                         }
-                    `;
-                    document.head.appendChild(style);
-                }
+                    </style>
+                `);
             }
-        });
+            });
     </script>
 </body>
 </html>

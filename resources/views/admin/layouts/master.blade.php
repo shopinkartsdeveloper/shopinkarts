@@ -26,6 +26,31 @@
         
         <!-- Scrollable Content -->
         <div class="main-content">
+
+            <!-- Flash Messages -->
+            <!-- @if(session('success') || session('error'))
+                <div class="flash-messages">
+                    @if(session('success'))
+                        <div class="flash-message success">
+                            <i class="fas fa-check-circle"></i>
+                            {{ session('success') }}
+                            <button type="button" class="flash-close" onclick="this.parentElement.remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    @endif
+                    
+                    @if(session('error'))
+                        <div class="flash-message error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            {{ session('error') }}
+                            <button type="button" class="flash-close" onclick="this.parentElement.remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    @endif
+                </div>
+            @endif -->
             @yield('content')
         </div>
         

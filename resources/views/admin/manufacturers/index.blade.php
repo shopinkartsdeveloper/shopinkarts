@@ -16,12 +16,31 @@
                 <input type="text" placeholder="Search manufacturers..." id="searchInput">
             </div>
             
-            <button class="filter-btn">
-                <i class="fas fa-filter"></i>
-                Filter
-            </button>
+            <div style="display: flex; gap: 10px;">
+                <button class="filter-btn">
+                    <i class="fas fa-filter"></i>
+                    Filter
+                </button>
+                
+                <a href="{{ route('admin.manufacturers.create') }}" class="filter-btn" style="background-color: #28a745;">
+                    <i class="fas fa-plus"></i>
+                    Add New Manufacturer
+                </a>
+            </div>
         </div>
     </div>
+    
+    @if(session('success'))
+        <div style="background-color: #d4edda; color: #155724; padding: 12px 20px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #28a745;">
+            {{ session('success') }}
+        </div>
+    @endif
+    
+    @if(session('error'))
+        <div style="background-color: #f8d7da; color: #721c24; padding: 12px 20px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #e53935;">
+            {{ session('error') }}
+        </div>
+    @endif
     
     <div class="table-container">
         <table class="data-table">
@@ -29,46 +48,107 @@
                 <tr>
                     <th>SN.</th>
                     <th>Name of Manufacturer</th>
+                    <th>Contact Info</th>
+                    <th>Status</th>
                     <th>Last Updated On</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="manufacturerTableBody">
-                @for($i = 1; $i <= 8; $i++)
-                <tr>
-                    <td>{{ $i }}.</td>
+                @forelse($manufacturers as $index => $manufacturer)
+                <tr @if($manufacturer->trashed()) style="opacity: 0.7; background-color: #f8d7da;" @endif>
+                    <td>{{ $index + 1 }}.</td>
                     <td>
-                        <div class="manufacturer-name">Abhishek yadav</div>
-                        <div class="manufacturer-company">(AP Logistics)</div>
+                        <div class="manufacturer-name">{{ $manufacturer->first_name }} {{ $manufacturer->last_name }}</div>
+                        <div class="manufacturer-company">({{ $manufacturer->firm_name }})</div>
                     </td>
-                    <td class="last-updated">17-12-2025 12:37 PM</td>
                     <td>
-                        <button class="action-btn view-manufacturer-btn" data-id="{{ $i }}">
-                            <i class="fas fa-eye"></i>
-                            View & Manage
-                        </button>
+                        <div style="font-size: 13px; color: #666;">
+                            {{ $manufacturer->email }}<br>
+                            {{ $manufacturer->mobile_number }}
+                        </div>
+                    </td>
+                    <td>
+                        @if($manufacturer->trashed())
+                            <span style="color: #e53935; font-weight: 600;">Deleted</span>
+                        @elseif($manufacturer->status == 'active')
+                            <span style="color: #28a745; font-weight: 600;">Active</span>
+                        @elseif($manufacturer->status == 'inactive')
+                            <span style="color: #6c757d; font-weight: 600;">Inactive</span>
+                        @else
+                            <span style="color: #ff9800; font-weight: 600;">Pending</span>
+                        @endif
+                    </td>
+                    <td class="last-updated">{{ $manufacturer->updated_at->format('d-m-Y H:i A') }}</td>
+                    <td>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <a href="{{ route('admin.manufacturers.show', $manufacturer->id) }}" class="action-btn view-manufacturer-btn" data-id="{{ $manufacturer->id }}">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </a>
+                            
+                            <a href="{{ route('admin.manufacturers.show', $manufacturer->id) }}" class="action-btn" style="background-color: #ff9800;">
+                                <i class="fas fa-cog"></i>
+                                Manage
+                            </a>
+                            
+                            @if($manufacturer->trashed())
+                                <form action="{{ route('admin.manufacturers.restore', $manufacturer->id) }}" method="POST" style="display: inline;">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="action-btn" style="background-color: #28a745;">
+                                        <i class="fas fa-undo"></i>
+                                        Restore
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.manufacturers.force-delete', $manufacturer->id) }}" method="POST" style="display: inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="action-btn" style="background-color: #e53935;" 
+                                            onclick="return confirm('Permanently delete this manufacturer? This cannot be undone!')">
+                                        <i class="fas fa-trash-alt"></i>
+                                        Delete
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ route('admin.manufacturers.edit', $manufacturer->id) }}" class="action-btn" style="background-color: #4361ee;">
+                                    <i class="fas fa-edit"></i>
+                                    Edit
+                                </a>
+                                <form action="{{ route('admin.manufacturers.destroy', $manufacturer->id) }}" method="POST" style="display: inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="action-btn" style="background-color: #e53935;" 
+                                            onclick="return confirm('Are you sure you want to delete this manufacturer?')">
+                                        <i class="fas fa-trash"></i>
+                                        Delete
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
                     </td>
                 </tr>
-                @endfor
+                @empty
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 30px;">
+                        <div style="color: #666; font-size: 16px;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #ddd; margin-bottom: 15px; display: block;"></i>
+                            No manufacturers found.
+                            <br>
+                            <a href="{{ route('admin.manufacturers.create') }}" style="color: #4361ee; text-decoration: none; margin-top: 10px; display: inline-block;">
+                                <i class="fas fa-plus"></i> Add your first manufacturer
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>
     
     <div class="pagination">
         <div class="pagination-info">
-            Showing 1 to 8 of 8 entries
-        </div>
-        
-        <div class="pagination-controls">
-            <button class="pagination-btn" disabled>
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <button class="pagination-btn active">1</button>
-            <button class="pagination-btn">2</button>
-            <button class="pagination-btn">3</button>
-            <button class="pagination-btn">
-                <i class="fas fa-chevron-right"></i>
-            </button>
+            Showing {{ $manufacturers->count() }} of {{ $manufacturers->count() }} entries
         </div>
     </div>
 </div>
@@ -86,8 +166,8 @@
                     <i class="fas fa-industry"></i>
                 </div>
             </div>
-            <div class="stat-value">08</div>
-            <div class="stat-change">+2 this month</div>
+            <div class="stat-value">{{ $totalManufacturers }}</div>
+            <div class="stat-change">+{{ $pendingManufacturers }} pending</div>
         </div>
         
         <div class="stat-card">
@@ -97,8 +177,8 @@
                     <i class="fas fa-check-circle"></i>
                 </div>
             </div>
-            <div class="stat-value">06</div>
-            <div class="stat-change">+1 this week</div>
+            <div class="stat-value">{{ $activeManufacturers }}</div>
+            <div class="stat-change">Active</div>
         </div>
         
         <div class="stat-card">
@@ -108,8 +188,8 @@
                     <i class="fas fa-times-circle"></i>
                 </div>
             </div>
-            <div class="stat-value">02</div>
-            <div class="stat-change negative">-1 this month</div>
+            <div class="stat-value">{{ $inactiveManufacturers }}</div>
+            <div class="stat-change negative">Inactive</div>
         </div>
         
         <div class="stat-card">
@@ -119,8 +199,8 @@
                     <i class="fas fa-clock"></i>
                 </div>
             </div>
-            <div class="stat-value">03</div>
-            <div class="stat-change">+2 this week</div>
+            <div class="stat-value">{{ $pendingManufacturers }}</div>
+            <div class="stat-change">Pending</div>
         </div>
     </div>
 </div>
@@ -128,7 +208,6 @@
 
 @push('scripts')
 <script>
-    // Manufacturers page specific JavaScript
     document.addEventListener('DOMContentLoaded', function() {
         // Search functionality
         const searchInput = document.getElementById('searchInput');
@@ -158,11 +237,29 @@
             });
         }
         
+        // Delete confirmation
+        document.querySelectorAll('form[action*="destroy"]').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (!confirm('Are you sure you want to delete this manufacturer?')) {
+                    e.preventDefault();
+                }
+            });
+        });
+        
+        // Force delete confirmation
+        document.querySelectorAll('form[action*="force-delete"]').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (!confirm('Permanently delete this manufacturer? This action cannot be undone!')) {
+                    e.preventDefault();
+                }
+            });
+        });
+        
         // Add click handlers for view buttons
         document.querySelectorAll('.view-manufacturer-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const manufacturerId = this.getAttribute('data-id');
-                showDetailsModal('manufacturer', manufacturerId);
+                // Show manufacturer details - already handled by link
             });
         });
     });

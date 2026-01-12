@@ -8,6 +8,9 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -25,7 +28,7 @@
             padding: 20px;
         }
 
-        /* Forgot Password Card */
+        /* Reset Password Card */
         .forgot-container {
             width: 100%;
             max-width: 450px;
@@ -137,6 +140,11 @@
             transform: translateY(-2px);
         }
 
+        .input-field input.error {
+            border-color: #d32f2f;
+            background: #fff5f5;
+        }
+
         .input-field .icon {
             position: absolute;
             left: 18px;
@@ -175,6 +183,24 @@
             gap: 10px;
         }
 
+        /* Validation Message */
+        .validation-message {
+            font-size: 12px;
+            margin-top: 5px;
+            padding-left: 5px;
+            display: none;
+        }
+
+        .validation-message.valid {
+            color: #28a745;
+            display: block;
+        }
+
+        .validation-message.invalid {
+            color: #d32f2f;
+            display: block;
+        }
+
         /* Buttons Container */
         .buttons-container {
             display: flex;
@@ -198,6 +224,12 @@
             letter-spacing: 0.5px;
         }
 
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
         .submit-btn::before {
             content: '';
             position: absolute;
@@ -209,12 +241,12 @@
             transition: 0.5s;
         }
 
-        .submit-btn:hover {
+        .submit-btn:hover:not(:disabled) {
             transform: translateY(-3px);
             box-shadow: 0 10px 25px rgba(67, 97, 238, 0.4);
         }
 
-        .submit-btn:hover::before {
+        .submit-btn:hover:not(:disabled)::before {
             left: 100%;
         }
 
@@ -277,36 +309,6 @@
             animation: slideIn 0.3s ease;
         }
 
-        /* For testing: Show reset link */
-        .reset-link-box {
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-            border-left: 5px solid #f59e0b;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-            word-break: break-all;
-        }
-
-        .reset-link-box h4 {
-            color: #92400e;
-            font-size: 14px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .reset-link-box a {
-            color: #0369a1;
-            font-size: 13px;
-            text-decoration: none;
-            word-break: break-all;
-        }
-
-        .reset-link-box a:hover {
-            text-decoration: underline;
-        }
-
         /* Login Link */
         .login-link {
             text-align: center;
@@ -366,6 +368,24 @@
                 font-size: 30px;
             }
         }
+
+        /* Character Counter */
+        .char-counter {
+            position: absolute;
+            right: 45px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 12px;
+            background: #f8fafc;
+            padding: 2px 6px;
+            border-radius: 3px;
+            display: none;
+        }
+
+        .input-field input:focus + .char-counter {
+            display: block;
+        }
     </style>
 </head>
 
@@ -389,7 +409,7 @@
             <div class="info-box">
                 <p>
                     <i class="fas fa-info-circle"></i>
-                    We will send a password reset link to your registered email address.
+                    We'll send you a link to reset your password. Make sure to use the email or mobile number associated with your account.
                 </p>
             </div>
 
@@ -405,18 +425,6 @@
             @if(session('success'))
                 <div class="success-message">
                     <i class="fas fa-check-circle"></i> {{ session('success') }}
-                </div>
-            @endif
-
-            <!-- For testing: Show reset link -->
-            @if(session('reset_link'))
-                <div class="reset-link-box">
-                    <h4><i class="fas fa-link"></i> Test Reset Link (For Development Only):</h4>
-                    <a href="{{ session('reset_link') }}" target="_blank">{{ session('reset_link') }}</a>
-                    <p style="margin-top: 8px; font-size: 12px; color: #92400e;">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        In production, this link would be sent to your email.
-                    </p>
                 </div>
             @endif
 
@@ -437,9 +445,13 @@
                                value="{{ old('identifier') }}"
                                placeholder="Enter email or 10-digit mobile"
                                required
-                               autofocus>
-                        <span class="helper-text">Enter the email or mobile number associated with your account</span>
+                               autofocus
+                               maxlength="60"
+                               autocomplete="username">
+                        <span class="char-counter" id="identifierCounter">0/60</span>
+                        <span class="helper-text">Email (max 60 chars) or 10-digit mobile number only</span>
                     </div>
+                    <div class="validation-message" id="identifierValidation"></div>
                     @error('identifier')
                         <span class="input-error">{{ $message }}</span>
                     @enderror
@@ -447,7 +459,7 @@
 
                 <!-- Buttons -->
                 <div class="buttons-container">
-                    <button type="submit" class="submit-btn">
+                    <button type="submit" class="submit-btn" id="submitBtn">
                         <i class="fas fa-paper-plane"></i> Send Reset Link
                     </button>
                     <a href="{{ route('login') }}" class="back-btn">
@@ -464,126 +476,346 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const identifierInput = document.getElementById('identifier');
-            const identifierIcon = document.getElementById('identifierIcon');
-            const forgotForm = document.getElementById('forgotForm');
+    $(document).ready(function() {
+        const identifierInput = $('#identifier');
+        const submitBtn = $('#submitBtn');
+        const forgotForm = $('#forgotForm');
+        const identifierIcon = $('#identifierIcon');
+        const identifierValidation = $('#identifierValidation');
+        const identifierCounter = $('#identifierCounter');
+        
+        // Character limits
+        const MAX_EMAIL_LENGTH = 60;
+        const MOBILE_LENGTH = 10;
+        
+        // XSS Prevention function
+        function sanitizeInput(input) {
+            return input.replace(/[<>"'&]/g, '');
+        }
+        
+        // Email validation regex
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        
+        // Mobile validation regex (only 10 digits)
+        const mobileRegex = /^[0-9]{10}$/;
+        
+        // Mobile input restriction - only allow digits
+        function restrictToDigits(input) {
+            return input.replace(/\D/g, '');
+        }
+        
+        // Function to update character counter
+        function updateCharCounter(input, counter, maxLength) {
+            const length = input.val().length;
+            counter.text(`${length}/${maxLength}`);
             
-            // Detect input type and change icon
-            identifierInput.addEventListener('input', function() {
-                const value = this.value.trim();
+            if (length > maxLength * 0.9) {
+                counter.css('color', '#d32f2f');
+            } else if (length > maxLength * 0.7) {
+                counter.css('color', '#ffa502');
+            } else {
+                counter.css('color', '#64748b');
+            }
+        }
+        
+        // Function to detect if input is email
+        function isEmail(value) {
+            // Remove any spaces
+            value = value.trim();
+            
+            // If contains @, it's likely an email
+            if (value.includes('@')) {
+                return emailRegex.test(value);
+            }
+            
+            return false;
+        }
+        
+        // Function to detect if input is mobile (strict check)
+        function isMobile(value) {
+            // Remove any spaces and non-digit characters
+            const digitsOnly = restrictToDigits(value);
+            
+            // For mobile, we check the original value too
+            // If it's exactly 10 digits and contains no letters or @ symbol
+            if (digitsOnly.length === MOBILE_LENGTH && 
+                /^\d+$/.test(value.replace(/\s/g, '')) && // Only digits after removing spaces
+                !value.includes('@')) {
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // Function to detect input type based on current value
+        function detectInputType(value) {
+            // If value contains @, it's definitely trying to be an email
+            if (value.includes('@')) {
+                return 'email';
+            }
+            
+            // If value is exactly 10 digits and no letters, it's mobile
+            const digitsOnly = restrictToDigits(value);
+            if (digitsOnly.length === MOBILE_LENGTH && /^\d+$/.test(value.replace(/\s/g, ''))) {
+                return 'mobile';
+            }
+            
+            // If starts with letter and contains @ later, it's email
+            if (/^[a-zA-Z]/.test(value) && value.includes('@')) {
+                return 'email';
+            }
+            
+            // If starts with digit and has exactly 10 digits, treat as mobile while typing
+            if (/^\d/.test(value) && digitsOnly.length <= MOBILE_LENGTH) {
+                return 'mobile';
+            }
+            
+            // Default to email for everything else (gives benefit of doubt)
+            return 'email';
+        }
+        
+        // Function to validate identifier (email or mobile)
+        function validateIdentifier() {
+            let value = sanitizeInput(identifierInput.val().trim());
+            
+            if (!value) {
+                identifierInput.addClass('error');
+                identifierValidation.removeClass('valid').addClass('invalid').text('Email or mobile number is required');
+                return false;
+            }
+            
+            // First, detect what type of input this is
+            const inputType = detectInputType(value);
+            
+            if (inputType === 'mobile') {
+                const digitsOnly = restrictToDigits(value);
                 
-                // Check if input looks like email
-                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                // Check if input looks like mobile (digits only)
-                const mobilePattern = /^\d+$/;
-                
-                if (emailPattern.test(value)) {
-                    identifierIcon.className = 'fas fa-envelope icon';
-                    identifierInput.type = 'email';
-                    identifierInput.placeholder = 'Enter your email address';
-                } else if (mobilePattern.test(value)) {
-                    identifierIcon.className = 'fas fa-phone icon';
-                    identifierInput.type = 'tel';
-                    identifierInput.placeholder = 'Enter 10-digit mobile number';
-                    
-                    // Auto-format mobile number
-                    if (value.length === 10) {
-                        this.value = value.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
-                    }
+                if (digitsOnly.length === MOBILE_LENGTH) {
+                    identifierIcon.removeClass('fa-envelope fa-user').addClass('fa-phone');
+                    identifierInput.removeClass('error');
+                    identifierValidation.removeClass('invalid').addClass('valid').text('✓ Valid mobile number');
+                    return true;
                 } else {
-                    identifierIcon.className = 'fas fa-user icon';
-                    identifierInput.type = 'text';
-                    identifierInput.placeholder = 'Enter email or 10-digit mobile';
+                    identifierInput.addClass('error');
+                    identifierValidation.removeClass('valid').addClass('invalid').text(`Mobile number must be ${MOBILE_LENGTH} digits (${digitsOnly.length}/${MOBILE_LENGTH})`);
+                    return false;
                 }
-            });
+            } else if (inputType === 'email') {
+                // Check if it's a valid email format
+                if (isEmail(value)) {
+                    // Check email length
+                    if (value.length > MAX_EMAIL_LENGTH) {
+                        identifierInput.addClass('error');
+                        identifierValidation.removeClass('valid').addClass('invalid').text(`Email is too long (max ${MAX_EMAIL_LENGTH} characters)`);
+                        return false;
+                    }
+                    
+                    identifierIcon.removeClass('fa-phone fa-user').addClass('fa-envelope');
+                    identifierInput.removeClass('error');
+                    identifierValidation.removeClass('invalid').addClass('valid').text('✓ Valid email format');
+                    return true;
+                } else {
+                    // If it's not a valid email yet, check if user is in the middle of typing
+                    if (value.includes('@')) {
+                        // User has typed @ but email is incomplete
+                        identifierIcon.removeClass('fa-phone fa-user').addClass('fa-envelope');
+                        identifierInput.removeClass('error');
+                        identifierValidation.removeClass('invalid valid');
+                        return false;
+                    } else {
+                        // User might be typing email without @ yet
+                        identifierIcon.removeClass('fa-phone fa-user').addClass('fa-envelope');
+                        identifierInput.removeClass('error');
+                        identifierValidation.removeClass('invalid').addClass('valid').text('✓ Continue typing your email');
+                        return true;
+                    }
+                }
+            }
             
-            // Form validation
-            forgotForm.addEventListener('submit', function(e) {
-                const identifier = identifierInput.value.trim();
-                
-                // Basic validation
-                if (!identifier) {
+            // If we can't determine the type
+            identifierInput.addClass('error');
+            identifierValidation.removeClass('valid').addClass('invalid').text('Please enter a valid email (max 60 chars) or 10-digit mobile number');
+            return false;
+        }
+        
+        // Handle identifier input with smart detection
+        identifierInput.on('input', function() {
+            let value = $(this).val();
+            
+            // Detect input type
+            const inputType = detectInputType(value);
+            
+            if (inputType === 'mobile') {
+                // For mobile, restrict to digits only
+                const digitsOnly = restrictToDigits(value);
+                $(this).val(digitsOnly.slice(0, MOBILE_LENGTH));
+                updateCharCounter($(this), identifierCounter, MOBILE_LENGTH);
+            } else {
+                // For email, allow all characters but restrict length
+                if (value.length > MAX_EMAIL_LENGTH) {
+                    $(this).val(value.slice(0, MAX_EMAIL_LENGTH));
+                }
+                updateCharCounter($(this), identifierCounter, MAX_EMAIL_LENGTH);
+            }
+            
+            validateIdentifier();
+            updateSubmitButton();
+        });
+        
+        // Handle identifier keypress to prevent unwanted behavior
+        identifierInput.on('keypress', function(e) {
+            const value = $(this).val();
+            const inputType = detectInputType(value + String.fromCharCode(e.which));
+            
+            // If current input is being treated as mobile, only allow digits
+            if (inputType === 'mobile') {
+                const charCode = e.which ? e.which : e.keyCode;
+                if (charCode < 48 || charCode > 57) {
                     e.preventDefault();
-                    showAlert('Please enter email or mobile number', 'error');
+                    return false;
+                }
+            }
+            return true;
+        });
+        
+        // Show character counter on focus
+        identifierInput.on('focus', function() {
+            identifierCounter.show();
+        });
+        
+        identifierInput.on('blur', function() {
+            setTimeout(() => identifierCounter.hide(), 200);
+            
+            // Auto-format mobile number on blur only if it's a mobile
+            const value = $(this).val();
+            if (isMobile(value)) {
+                const digitsOnly = restrictToDigits(value);
+                if (digitsOnly.length === MOBILE_LENGTH) {
+                    $(this).val(digitsOnly.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'));
+                }
+            }
+        });
+        
+        // Remove formatting on focus if it's mobile
+        identifierInput.on('focus', function() {
+            const value = $(this).val();
+            if (isMobile(value)) {
+                const digitsOnly = restrictToDigits(value);
+                if (digitsOnly.length === MOBILE_LENGTH) {
+                    $(this).val(digitsOnly);
+                }
+            }
+        });
+        
+        // Update submit button state
+        function updateSubmitButton() {
+            if (validateIdentifier()) {
+                submitBtn.prop('disabled', false);
+            } else {
+                submitBtn.prop('disabled', true);
+            }
+        }
+        
+        // Form submission with additional validation
+        forgotForm.on('submit', function(e) {
+            e.preventDefault();
+            
+            // Final validation
+            if (!validateIdentifier()) {
+                showAlert('Please enter a valid email or mobile number', 'error');
+                return false;
+            }
+            
+            // Sanitize input before submission
+            const identifier = sanitizeInput(identifierInput.val().trim());
+            
+            // Final type check before submission
+            const inputType = detectInputType(identifier);
+            
+            if (inputType === 'mobile') {
+                const digitsOnly = restrictToDigits(identifier);
+                if (digitsOnly.length !== MOBILE_LENGTH) {
+                    showAlert(`Mobile number must be exactly ${MOBILE_LENGTH} digits`, 'error');
                     identifierInput.focus();
                     return false;
                 }
-                
-                // Validate mobile format if it's a mobile number
-                if (/^\d+$/.test(identifier.replace(/\D/g, ''))) {
-                    const mobile = identifier.replace(/\D/g, '');
-                    if (mobile.length !== 10) {
-                        e.preventDefault();
-                        showAlert('Please enter a valid 10-digit mobile number', 'error');
+            } else if (inputType === 'email') {
+                    if (!isEmail(identifier)) {
+                        showAlert('Please enter a valid email address', 'error');
+                        identifierInput.focus();
+                        return false;
+                    }
+                    
+                    if (identifier.length > MAX_EMAIL_LENGTH) {
+                        showAlert(`Email must not exceed ${MAX_EMAIL_LENGTH} characters`, 'error');
                         identifierInput.focus();
                         return false;
                     }
                 }
                 
-                // Change button text to show loading
-                const submitBtn = this.querySelector('.submit-btn');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-                submitBtn.disabled = true;
+                identifierInput.val(identifier);
                 
-                // Re-enable button after 5 seconds (in case of error)
+                // Show loading state
+                const originalText = submitBtn.html();
+                submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Sending...');
+                submitBtn.prop('disabled', true);
+                
+                // Submit form after 100ms delay
                 setTimeout(() => {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }, 5000);
+                    this.submit();
+                }, 100);
+                
+                // Re-enable button after 10 seconds (in case of error)
+                setTimeout(() => {
+                    submitBtn.html(originalText);
+                    submitBtn.prop('disabled', false);
+                }, 10000);
                 
                 return true;
             });
             
-            // Auto-format mobile number on blur
-            identifierInput.addEventListener('blur', function() {
-                const value = this.value.replace(/\D/g, '');
-                if (value.length === 10) {
-                    this.value = value.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
-                }
-            });
+            // Initialize validation and counters
+            const initialValue = identifierInput.val().trim();
             
-            // Remove formatting on focus
-            identifierInput.addEventListener('focus', function() {
-                const value = this.value.replace(/\D/g, '');
-                if (value.length === 10) {
-                    this.value = value;
-                }
-            });
-            
-            // Auto-detect input type on page load
-            if (identifierInput.value) {
-                identifierInput.dispatchEvent(new Event('input'));
+            // Initial detection
+            const initialType = detectInputType(initialValue);
+            if (initialType === 'mobile') {
+                updateCharCounter(identifierInput, identifierCounter, MOBILE_LENGTH);
+            } else {
+                updateCharCounter(identifierInput, identifierCounter, MAX_EMAIL_LENGTH);
             }
+            
+            validateIdentifier();
+            updateSubmitButton();
             
             // Alert function
             function showAlert(message, type = 'info') {
+                // Remove existing alerts
+                $('.custom-alert').remove();
+                
                 // Create alert element
-                const alert = document.createElement('div');
-                alert.className = `alert alert-${type}`;
-                alert.innerHTML = `
-                    <div style="position: fixed; top: 20px; right: 20px; background: ${type === 'error' ? '#d32f2f' : '#4361ee'}; 
-                         color: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
-                         display: flex; align-items: center; gap: 10px; z-index: 10000; animation: slideInRight 0.3s ease;">
+                const alert = $(`
+                    <div class="custom-alert" style="position: fixed; top: 20px; right: 20px; background: ${type === 'error' ? '#d32f2f' : '#4361ee'}; 
+                        color: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+                        display: flex; align-items: center; gap: 10px; z-index: 10000; animation: slideInRight 0.3s ease;">
                         <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
                         <span>${message}</span>
                     </div>
-                `;
+                `);
                 
-                document.body.appendChild(alert);
+                $('body').append(alert);
                 
                 // Remove alert after 3 seconds
                 setTimeout(() => {
-                    alert.style.animation = 'slideOutRight 0.3s ease';
+                    alert.css('animation', 'slideOutRight 0.3s ease');
                     setTimeout(() => alert.remove(), 300);
                 }, 3000);
-                
-                // Add CSS for animations
-                if (!document.querySelector('#alert-styles')) {
-                    const style = document.createElement('style');
-                    style.id = 'alert-styles';
-                    style.textContent = `
+            }
+            
+            // Add CSS for animations
+            if (!$('#alert-styles').length) {
+                $('head').append(`
+                    <style id="alert-styles">
                         @keyframes slideInRight {
                             from { transform: translateX(100%); opacity: 0; }
                             to { transform: translateX(0); opacity: 1; }
@@ -592,9 +824,8 @@
                             from { transform: translateX(0); opacity: 1; }
                             to { transform: translateX(100%); opacity: 0; }
                         }
-                    `;
-                    document.head.appendChild(style);
-                }
+                    </style>
+                `);
             }
         });
     </script>

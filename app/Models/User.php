@@ -5,143 +5,178 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles, SoftDeletes;
 
-    protected $guard_name = 'web';
-
-    /**
-     * Fillable attributes for mass assignment
-     */
     protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
         'email',
-        'mobile',
+        'mobile_number',
+        'whatsapp_number',
+        'firm_name',
+        'gst_number',
+        'shop_name',
+        'company_name',
         'password',
-        'email_verified_at',
+        'status',
+        'profile_image',
+        'address',
+        'city',
+        'state',
+        'pincode',
+        'country',
+        'type',
+        'mobile',
+        'mobile_verified_at'
     ];
 
-    /**
-     * Hidden attributes for serialization
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Cast attributes to native types
-     */
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'mobile_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+
+    protected $dates = ['deleted_at'];
+
+    // Validation rules for creation
+    public static function createRules()
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'mobile_number' => 'required|string|max:15|unique:users,mobile_number',
+            'email' => 'required|email|unique:users,email',
+            'whatsapp_number' => 'nullable|string|max:15',
+            'firm_name' => 'required|string|max:255',
+            'gst_number' => 'nullable|string|max:20',
+            'shop_name' => 'required|string|max:255',
+            'company_name' => 'nullable|string|max:255',
+            'password' => 'required|string|min:8|confirmed',
+            'status' => 'required|in:active,inactive,pending'
         ];
     }
 
-    /**
-     * Scope to find user by email or mobile
-     */
-    public function scopeFindByEmailOrMobile($query, $identifier)
+    // Validation rules for update
+    public static function updateRules($userId)
     {
-        // Check if identifier is email
-        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
-            return $query->where('email', $identifier);
-        }
-        
-        // Clean mobile number (remove non-digits)
-        $mobile = preg_replace('/\D/', '', $identifier);
-        
-        // If it looks like a mobile number
-        if (strlen($mobile) >= 10) {
-            return $query->where('mobile', $mobile)
-                        ->orWhere('mobile', 'like', '%' . $mobile . '%');
-        }
-        
-        // If nothing matches, return empty result
-        return $query->where('id', 0);
+        return [
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'mobile_number' => 'required|string|max:15|unique:users,mobile_number,' . $userId,
+            'email' => 'required|email|unique:users,email,' . $userId,
+            'whatsapp_number' => 'nullable|string|max:15',
+            'firm_name' => 'required|string|max:255',
+            'gst_number' => 'nullable|string|max:20',
+            'shop_name' => 'required|string|max:255',
+            'company_name' => 'nullable|string|max:255',
+            'status' => 'required|in:active,inactive,pending'
+        ];
     }
 
-    /**
-     * Mutator for mobile number formatting
-     */
-    protected function mobile(): Attribute
+    // Get full name
+    public function getFullNameAttribute()
     {
-        return Attribute::make(
-            get: fn ($value) => $value,
-            set: function ($value) {
-                // Remove all non-digit characters
-                $mobile = preg_replace('/\D/', '', $value);
-                
-                // If starts with 91 and length is 12, remove 91
-                if (strlen($mobile) == 12 && str_starts_with($mobile, '91')) {
-                    $mobile = substr($mobile, 2);
-                }
-                
-                // If starts with 0 and length is 11, remove 0
-                if (strlen($mobile) == 11 && str_starts_with($mobile, '0')) {
-                    $mobile = substr($mobile, 1);
-                }
-                
-                // Ensure it's exactly 10 digits
-                if (strlen($mobile) == 10) {
-                    return $mobile;
-                }
-                
-                // Return as is if not 10 digits (validation will catch it)
-                return $mobile;
-            },
-        );
+        return $this->first_name . ' ' . $this->last_name;
     }
 
-    /**
-     * Method to authenticate with mobile number
-     */
-    public static function findByMobile($mobile)
-    {
-        $cleanMobile = preg_replace('/\D/', '', $mobile);
-        
-        if (strlen($cleanMobile) == 10) {
-            return static::where('mobile', $cleanMobile)->first();
-        }
-        
-        return null;
-    }
-
-    /**
-     * Check if user is admin
-     */
-    public function isAdmin()
-    {
-        return $this->hasRole('admin');
-    }
-
-    /**
-     * Check if user is seller
-     */
+    // Check if user is seller
     public function isSeller()
     {
         return $this->hasRole('seller');
     }
 
-    /**
-     * Check if user is manufacturer - FIXED: Function name was missing
-     */
+    // Check if user is manufacturer
     public function isManufacturer()
     {
         return $this->hasRole('manufacturer');
     }
 
-    /**
-     * Get user's role name
-     */
-    public function getRoleName()
+    // Check if user is admin
+    public function isAdmin()
     {
-        return $this->roles->first()->name ?? 'user';
+        return $this->hasRole('admin');
+    }
+
+    // Check if user is staff
+    public function isStaff()
+    {
+        return $this->hasRole('staff');
+    }
+
+    // Check if user is customer
+    public function isCustomer()
+    {
+        return $this->hasRole('customer');
+    }
+
+    // Check if user can login
+    public function canLogin()
+    {
+        return $this->status === 'active' && !$this->trashed();
+    }
+
+    // Scope for sellers
+    public function scopeSellers($query)
+    {
+        return $query->whereHas('roles', function($q) {
+            $q->where('name', 'seller');
+        });
+    }
+
+    // Scope for manufacturers
+    public function scopeManufacturers($query)
+    {
+        return $query->whereHas('roles', function($q) {
+            $q->where('name', 'manufacturer');
+        });
+    }
+
+    // Scope for active users
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    // Scope for inactive users
+    public function scopeInactive($query)
+    {
+        return $query->where('status', 'inactive');
+    }
+
+    // Scope for pending users
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    // Scope for loginable users (active and not deleted)
+    public function scopeLoginable($query)
+    {
+        return $query->where('status', 'active')->whereNull('deleted_at');
+    }
+
+    // Find user by email or mobile
+    public function scopeFindByEmailOrMobile($query, $identifier)
+    {
+        $isEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL);
+        
+        if ($isEmail) {
+            return $query->where('email', $identifier);
+        } else {
+            $mobile = preg_replace('/\D/', '', $identifier);
+            return $query->where('mobile', 'like', '%' . $mobile . '%')
+                        ->orWhere('mobile_number', 'like', '%' . $mobile . '%');
+        }
     }
 }
